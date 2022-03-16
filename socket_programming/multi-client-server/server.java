@@ -1,3 +1,4 @@
+import java.awt.List;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -8,21 +9,23 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 
 public class MainServer {
 
     private static int portnumber = 6968;
-    static ArrayList <ClientHandler> allClients = new ArrayList<>();
-
-    public static void main(String[] args) throws Exception {
+    public static ArrayList <ClientHandler> allClients = new ArrayList<>();
+    public static int clientNo = 1;
+    public static void main(String[] args) throws IOException {
 
         // init
         // server works by default on localhost
         ServerSocket serversocket = new ServerSocket(portnumber);
-        int clientNo = 0;
-    
         System.out.println("server is running on port : " + portnumber);
+
+        PrintWriter out = null;
+        BufferedReader in = null;
 
         while (true) {
 
@@ -34,11 +37,11 @@ public class MainServer {
             clientsocket = serversocket.accept();
 
             // input and output from client
-            PrintWriter out = new PrintWriter(clientsocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientsocket.getInputStream()));
+            out = new PrintWriter(clientsocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(clientsocket.getInputStream()));
 
             // create a threads
-            ClientHandler ch = new ClientHandler(clientsocket, "Client#" + clientNo, in, out);
+            ClientHandler ch = new ClientHandler(clientsocket, "Client#" + MainServer.clientNo, in, out);
         
             // adding to the clientList
             allClients.add(ch);
@@ -48,19 +51,12 @@ public class MainServer {
             
             clientThread.start();
 
-            // decrease when user leaves
-            clientNo++;
+            MainServer.clientNo++;
            
           } catch (Exception e) {
             clientsocket.close();
-            e.printStackTrace();
             System.exit(1);
-
-            //out.close();
-            //in.close();
-            //clientSocket.close();
-            //serverSocket.close();
-          }
+         }
         }
     }
 }
@@ -87,6 +83,29 @@ public class ClientHandler implements Runnable{
     this.active = true;
   }
 
+  private void closeConnection(){
+
+    try {
+      this.active = false;
+      this.clientsocket.close();
+      this.inp.close();
+      this.out.close();
+
+      MainServer.clientNo--;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  // send message to everyone except me
+  private void sendToAll(String recivedMsg) {
+    for (ClientHandler client : MainServer.allClients){
+      if (!client.clientName.equals(this.clientName) && client.active){
+        client.out.println(recivedMsg);
+       }
+     }
+  }
+
   @Override
   public void run() {
 
@@ -97,34 +116,30 @@ public class ClientHandler implements Runnable{
       try {
         recivedMsg = inp.readLine();
 
-        System.out.println(recivedMsg);
-
         // check for ctrl+C
-        if (recivedMsg.equals(this.EXIT_STR)){
+        //
+        try {
+         if (recivedMsg.equals(this.EXIT_STR)){
 
           // send to all
-          System.out.println(this.clientName + " exits");
-
-          // close the connection and break
-          this.active = false;
-          this.clientsocket.close();
+          this.sendToAll(this.clientName + " exits");
+          this.closeConnection();
 
           // bye
           break;
         }
 
-        // send to all except me
-        for (ClientHandler client : MainServer.allClients){
-
-          if (!client.clientName.equals(this.clientName)){
-            client.out.println(this.clientName + ":" + recivedMsg);
-            client.out.flush();
-            break;
-          }
+        } catch (NullPointerException e) {
+          this.sendToAll(this.clientName + " exits");
+          this.closeConnection();
+          break;
         }
-        
+
+        // send to all except me
+        this.sendToAll(this.clientName + "sends " +  recivedMsg);
+
       } catch (IOException e) {
-        e.printStackTrace();
+        System.exit(1);
       }
     }
 
@@ -133,8 +148,9 @@ public class ClientHandler implements Runnable{
       this.clientsocket.close();
       this.inp.close();
       this.out.close();
+
     } catch (IOException e) {
-      e.printStackTrace();
+
     }
   }
 }
