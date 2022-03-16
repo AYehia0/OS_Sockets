@@ -1,7 +1,4 @@
-import java.awt.List;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -9,8 +6,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Scanner;
 
 public class MainServer {
 
@@ -71,7 +66,6 @@ public class ClientHandler implements Runnable{
   private BufferedReader inp;
   private PrintWriter out;
   private final String EXIT_STR = "exit";
-  public Scanner clientSc = new Scanner(System.in);
 
   public ClientHandler(Socket socket, String name, BufferedReader inp, PrintWriter out) {
     this.clientsocket = socket;
