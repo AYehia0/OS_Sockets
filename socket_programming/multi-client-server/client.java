@@ -45,7 +45,7 @@ public class Client {
   public String readMessage() {
     String outputMsg = "";
     try {
-      outputMsg =  in.readLine();
+      outputMsg = in.readLine();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -111,7 +111,15 @@ public class Client {
 
             msgRead = newClient.readMessage();
 
-            System.out.println(msgRead);
+            if (msgRead != null){
+              System.out.println(msgRead);
+            }else {
+              // clean the meh
+              System.out.println("Server has been terminated, don't panic or panic");
+              newClient.closeSession();
+
+              System.exit(1);
+            }
 
           } catch (Exception e) {
             System.exit(1);
@@ -119,7 +127,6 @@ public class Client {
         }
       }
     });
-
 
     sendMsg.start();
     getMsg.start();
